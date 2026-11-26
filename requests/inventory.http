@@ -1,0 +1,31 @@
+@base = http://localhost:8001
+
+### Health
+GET {{base}}/health
+
+### List products
+GET {{base}}/products
+
+### Get one
+GET {{base}}/products/1
+
+### Create
+POST {{base}}/products
+Content-Type: application/json
+
+{"name": "Desk Lamp", "price": 899, "stock": 40}
+
+### Replace
+PUT {{base}}/products/1
+Content-Type: application/json
+
+{"name": "Wireless Mouse", "price": 849, "stock": 45}
+
+### Patch
+PATCH {{base}}/products/1
+Content-Type: application/json
+
+{"stock": 44}
+
+### Delete
+DELETE {{base}}/products/6
