@@ -1,0 +1,214 @@
+{
+  "info": {
+    "name": "ShopStream Inventory",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "productName", "value": "" },
+    { "key": "productId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "1 Health",
+      "event": [
+        { "listen": "test", "script": { "type": "text/javascript", "exec": [
+          "pm.test('status is 200', function () {",
+          "    pm.response.to.have.status(200);",
+          "});",
+          "pm.test('body says ok', function () {",
+          "    pm.expect(pm.response.json().status).to.eql('ok');",
+          "});"
+        ] } }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{baseUrl}}/health", "host": ["{{baseUrl}}"], "path": ["health"] }
+      }
+    },
+    {
+      "name": "2 List products",
+      "event": [
+        { "listen": "test", "script": { "type": "text/javascript", "exec": [
+          "// every check lives inside pm.test('name', function () { ... })",
+          "pm.test('status is 200', function () {",
+          "    pm.response.to.have.status(200);",
+          "});",
+          "pm.test('returns a non-empty array', function () {",
+          "    const body = pm.response.json();",
+          "    pm.expect(body).to.be.an('array');",
+          "    pm.expect(body.length).to.be.above(0);",
+          "});",
+          "pm.test('each product has the right fields', function () {",
+          "    pm.response.json().forEach(function (p) {",
+          "        pm.expect(p).to.have.all.keys('id', 'name', 'price', 'stock');",
+          "    });",
+          "});",
+          "pm.test('responds in under 1000 ms', function () {",
+          "    pm.expect(pm.response.responseTime).to.be.below(1000);",
+          "});",
+          "pm.test('every price is a number', function () {",
+          "    pm.response.json().forEach(function (p) {",
+          "        pm.expect(p.price).to.be.a('number');",
+          "    });",
+          "});"
+        ] } }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{baseUrl}}/products", "host": ["{{baseUrl}}"], "path": ["products"] }
+      }
+    },
+    {
+      "name": "3 Create product",
+      "event": [
+        { "listen": "prerequest", "script": { "type": "text/javascript", "exec": [
+          "// runs BEFORE the request: build a unique name so reruns never clash",
+          "pm.collectionVariables.set('productName', 'Lamp-' + Date.now());"
+        ] } },
+        { "listen": "test", "script": { "type": "text/javascript", "exec": [
+          "pm.test('status is 201 Created', function () {",
+          "    pm.response.to.have.status(201);",
+          "});",
+          "pm.test('Location header is present', function () {",
+          "    pm.response.to.have.header('Location');",
+          "});",
+          "const body = pm.response.json();",
+          "pm.test('name matches what we sent', function () {",
+          "    pm.expect(body.name).to.eql(pm.collectionVariables.get('productName'));",
+          "});",
+          "// CHAINING: save the new id so the next requests can use {{productId}}",
+          "pm.collectionVariables.set('productId', body.id);",
+          "pm.test('Stock is as expected', function () {",
+          "    pm.expect(body.stock).to.eql(40);",
+          "});"
+        ] } }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [ { "key": "Content-Type", "value": "application/json" } ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"name\": \"{{productName}}\", \"price\": 899, \"stock\": 40}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": { "raw": "{{baseUrl}}/products", "host": ["{{baseUrl}}"], "path": ["products"] }
+      }
+    },
+    {
+      "name": "4 Get created product",
+      "event": [
+        { "listen": "test", "script": { "type": "text/javascript", "exec": [
+          "pm.test('status is 200', function () {",
+          "    pm.response.to.have.status(200);",
+          "});",
+          "pm.test('id and name match the created product', function () {",
+          "    const body = pm.response.json();",
+          "    pm.expect(body.id).to.eql(Number(pm.collectionVariables.get('productId')));",
+          "    pm.expect(body.name).to.eql(pm.collectionVariables.get('productName'));",
+          "});"
+        ] } }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{baseUrl}}/products/{{productId}}", "host": ["{{baseUrl}}"], "path": ["products", "{{productId}}"] }
+      }
+    },
+    {
+      "name": "5 Patch stock",
+      "event": [
+        { "listen": "test", "script": { "type": "text/javascript", "exec": [
+          "pm.test('status is 200', function () {",
+          "    pm.response.to.have.status(200);",
+          "});",
+          "pm.test('stock changed, name did not', function () {",
+          "    const body = pm.response.json();",
+          "    pm.expect(body.stock).to.eql(25);",
+          "    pm.expect(body.name).to.eql(pm.collectionVariables.get('productName'));",
+          "});"
+        ] } }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [ { "key": "Content-Type", "value": "application/json" } ],
+        "body": { "mode": "raw", "raw": "{\"stock\": 25}", "options": { "raw": { "language": "json" } } },
+        "url": { "raw": "{{baseUrl}}/products/{{productId}}", "host": ["{{baseUrl}}"], "path": ["products", "{{productId}}"] }
+      }
+    },
+    {
+      "name": "6 Put replace product",
+      "event": [
+        { "listen": "test", "script": { "type": "text/javascript", "exec": [
+          "pm.test('status is 200', function () {",
+          "    pm.response.to.have.status(200);",
+          "});",
+          "pm.test('every field was replaced', function () {",
+          "    const body = pm.response.json();",
+          "    pm.expect(body.price).to.eql(999);",
+          "    pm.expect(body.stock).to.eql(30);",
+          "});"
+        ] } }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [ { "key": "Content-Type", "value": "application/json" } ],
+        "body": { "mode": "raw", "raw": "{\"name\": \"{{productName}}-pro\", \"price\": 999, \"stock\": 30}", "options": { "raw": { "language": "json" } } },
+        "url": { "raw": "{{baseUrl}}/products/{{productId}}", "host": ["{{baseUrl}}"], "path": ["products", "{{productId}}"] }
+      }
+    },
+    {
+      "name": "7 Delete product",
+      "event": [
+        { "listen": "test", "script": { "type": "text/javascript", "exec": [
+          "pm.test('status is 204 No Content', function () {",
+          "    pm.response.to.have.status(204);",
+          "});",
+          "pm.test('body is empty', function () {",
+          "    pm.expect(pm.response.text()).to.eql('');",
+          "});"
+        ] } }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": { "raw": "{{baseUrl}}/products/{{productId}}", "host": ["{{baseUrl}}"], "path": ["products", "{{productId}}"] }
+      }
+    },
+    {
+      "name": "8 Get deleted product (expect 404)",
+      "event": [
+        { "listen": "test", "script": { "type": "text/javascript", "exec": [
+          "pm.test('status is 404', function () {",
+          "    pm.response.to.have.status(404);",
+          "});",
+          "pm.test('error message is clear', function () {",
+          "    pm.expect(pm.response.json().detail).to.eql('Product not found');",
+          "});"
+        ] } }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{baseUrl}}/products/{{productId}}", "host": ["{{baseUrl}}"], "path": ["products", "{{productId}}"] }
+      }
+    },
+    {
+      "name": "9 Create with invalid data (expect 422)",
+      "event": [
+        { "listen": "test", "script": { "type": "text/javascript", "exec": [
+          "pm.test('invalid input is rejected with 422', function () {",
+          "    pm.response.to.have.status(422);",
+          "});"
+        ] } }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [ { "key": "Content-Type", "value": "application/json" } ],
+        "body": { "mode": "raw", "raw": "{\"name\": \"\", \"price\": -5, \"stock\": 1}", "options": { "raw": { "language": "json" } } },
+        "url": { "raw": "{{baseUrl}}/products", "host": ["{{baseUrl}}"], "path": ["products"] }
+      }
+    }
+  ]
+}

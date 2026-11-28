@@ -31,6 +31,12 @@ jobs:
         run: |
           curl -fsS -i localhost:8001/health
           curl -fsS localhost:8001/products | python3 -m json.tool
+      
+      - name: Run Postman collection with Newman
+        run: |
+          npx --yes newman run postman/inventory.postman_collection.json \
+            -e postman/inventory.postman_environment.json \
+            --env-var baseUrl=http://localhost:8001
 
       - name: Show API log on failure
         if: failure()
